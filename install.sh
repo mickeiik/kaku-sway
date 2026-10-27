@@ -36,6 +36,9 @@ for f in "$here"/wallpapers/*; do
     place "$f" ~/Pictures/Wallpapers/"$(basename "$f")"
 done
 mkdir -p ~/Pictures/Screenshots ~/Videos/Recordings
+# Where Flatpak puts launcher entries: it must exist when the shell starts, or the
+# first Flathub app only shows up in the launcher after a restart
+mkdir -p ~/.local/share/flatpak/exports/share/applications
 
 step "Login screen theme"
 sudo cp -r ~/.config/sddm-theme/tokyo-night /usr/share/sddm/themes/
