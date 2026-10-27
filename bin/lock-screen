@@ -1,0 +1,23 @@
+#!/bin/sh
+# Lock the session with the Quickshell lock screen, or with swaylock if the shell
+# isn't running or doesn't answer, so locking never silently fails.
+#   lock-screen          lock
+#   lock-screen --wait   lock, and only return once the lock is really on screen
+#                        (used before sleep, so the desktop never shows on resume)
+
+# Each call gets a time limit: a hung shell counts as not running
+lock_ipc() { timeout 2 qs ipc call lock "$@" 2>/dev/null; }
+fallback() { exec swaylock -f -c 1a1b26; }
+
+lock_ipc lock >/dev/null || fallback
+[ "$1" = --wait ] || exit 0
+
+i=0
+while [ $i -lt 20 ]; do
+    [ "$(lock_ipc isSecure)" = true ] && exit 0
+    sleep 0.1
+    i=$((i + 1))
+done
+# Not confirmed on screen after 2 s: lock with swaylock instead
+# (if the shell's lock did come up meanwhile, swaylock just exits)
+fallback

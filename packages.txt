@@ -1,0 +1,30 @@
+# Fedora packages kaku-sway needs (official repos). Installed by install.sh.
+sway-config-fedora      # Sway, as set up by the Fedora Sway spin
+swayidle                # lock and screen off when idle
+swaylock                # fallback lock screen if Quickshell isn't running
+sddm                    # login manager (kaku login theme)
+quickshell              # the whole shell: bar, panels, launcher, notifications, lock screen...
+foot                    # terminal
+Thunar                  # file manager
+micro                   # text editor
+adw-gtk3-theme          # GTK3 apps in libadwaita style
+papirus-icon-theme      # icons
+jetbrains-mono-fonts-all    # font
+fontawesome-6-free-fonts    # bar and panel icons
+brightnessctl           # screen brightness
+playerctl               # media players (Now Playing)
+wlsunset                # night light
+wl-clipboard            # clipboard
+cliphist                # clipboard history (Ctrl+Super+V)
+wtype                   # Super+C / Super+V copy and paste in any app
+grim                    # screenshots
+slurp                   # screenshot area selection
+grimshot                # screenshots (Print keys)
+swappy                  # screenshot annotation
+wf-recorder             # screen recording
+libnotify               # notify-send
+jq                      # used by scripts
+fzf                     # package browsers of the launcher (Install / Remove)
+fprintd                 # fingerprint (lock screen, admin prompt)
+fprintd-pam
+pipx                    # to install autotiling

@@ -1,0 +1,8 @@
+{
+    "colorscheme": "tokyonight",
+    "clipboard": "external",
+    "mouse": true,
+    "cursorline": true,
+    "tabsize": 4,
+    "tabstospaces": true
+}

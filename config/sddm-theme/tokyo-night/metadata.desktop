@@ -1,0 +1,10 @@
+[SddmGreeterTheme]
+Name=Tokyo Night
+Description=Login screen matching the Quickshell lock screen
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=tokyo-night
+Theme-API=2.0
+QtVersion=6

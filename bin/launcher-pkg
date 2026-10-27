@@ -1,0 +1,108 @@
+#!/bin/bash
+# Package browsers and updates for the launcher (run inside a floating terminal).
+#   launcher-pkg install          browse Fedora packages, install the selected ones
+#   launcher-pkg remove           browse packages you installed, remove the selected ones
+#   launcher-pkg flatpak-install  browse Flathub apps, install the selected ones
+#   launcher-pkg flatpak-remove   browse installed Flatpak apps, remove the selected ones
+#   launcher-pkg update           update the system (dnf) and Flatpak apps
+#   launcher-pkg firmware         update BIOS and device firmware (fwupd)
+
+# Tokyo Night, square borders
+FZF_THEME=(
+    --border=sharp --preview-window=down,55%,border-top,wrap
+    --color='fg:#c0caf5,bg:-1,hl:#7aa2f7,fg+:#c0caf5,bg+:#292e42,hl+:#7aa2f7'
+    --color='info:#565f89,prompt:#7aa2f7,pointer:#7aa2f7,marker:#9ece6a,spinner:#7aa2f7,header:#565f89,border:#414868'
+    --marker='+' --pointer='>' --multi --reverse --ansi
+)
+
+# fzf over "id<TAB>label" lines; prints the selected ids
+pick() {
+    local prompt=$1 preview=$2
+    fzf "${FZF_THEME[@]}" --prompt="$prompt › " --delimiter=$'\t' --with-nth=2.. \
+        --header='Tab: select several   Enter: confirm   Esc: cancel' \
+        --preview="$preview" | cut -f1
+}
+
+# Adds a green ✓ to "id<TAB>label" lines whose id is in the list given as $1
+mark_installed() {
+    awk -F'\t' -v OFS='\t' -v inst="$1" '
+        BEGIN { n = split(inst, a, "\n"); for (i = 1; i <= n; i++) have[a[i]] = 1 }
+        { if ($1 in have) $2 = $2 "  \033[32m✓\033[0m"; print }'
+}
+
+heading() {
+    echo -e "\n\033[1;34m== $*\033[0m"
+}
+
+finish() {
+    echo
+    read -rsn1 -p "Done. Press any key to close."
+}
+
+# The browsers need fzf: say so instead of closing straight away
+if [[ $1 == install || $1 == remove || $1 == flatpak-* ]] && ! command -v fzf >/dev/null; then
+    echo "fzf is not installed. Install it with:"
+    echo
+    echo "    sudo dnf install fzf"
+    finish
+    exit 1
+fi
+
+case "$1" in
+    install)
+        mapfile -t pkgs < <(
+            { dnf repoquery --available --cacheonly --qf '%{name}\n' 2>/dev/null || dnf repoquery --available --qf '%{name}\n'; } |
+                sort -u | awk '{ printf "%s\t%s\n", $0, $0 }' | mark_installed "$(rpm -qa --qf '%{NAME}\n')" |
+                pick "Install (Fedora)" 'dnf info --cacheonly {1} 2>/dev/null || dnf info {1}')
+        [ ${#pkgs[@]} -eq 0 ] && exit 0
+        sudo dnf install -- "${pkgs[@]}"
+        ;;
+    remove)
+        mapfile -t pkgs < <(
+            dnf repoquery --userinstalled --qf '%{name}\n' 2>/dev/null | sort -u | awk '{ printf "%s\t%s\n", $0, $0 }' |
+                pick "Remove (Fedora)" 'dnf info --installed {1}')
+        [ ${#pkgs[@]} -eq 0 ] && exit 0
+        sudo dnf remove -- "${pkgs[@]}"
+        ;;
+    flatpak-install)
+        # App list with descriptions, kept for the details pane
+        catalog=$(mktemp); trap 'rm -f "$catalog"' EXIT
+        flatpak remote-ls --user --app --columns=application,name,version,description flathub 2>/dev/null > "$catalog"
+        details="awk -F'\t' -v id={1} '\$1 == id { print \"\033[1m\" \$2 \"\033[0m  \" \$3; print \"\"; print \$4; print \"\" }' $catalog;
+                 flatpak remote-info --user flathub {1} | grep -E 'ID:|Download Size|Installed Size|Runtime'"
+        mapfile -t apps < <(
+            sort -t$'\t' -k2 -f "$catalog" |
+                awk -F'\t' '{ printf "%s\t%s  \033[90m%s\033[0m\n", $1, $2, $1 }' |
+                mark_installed "$(flatpak list --app --columns=application)" |
+                pick "Install (Flathub)" "$details")
+        [ ${#apps[@]} -eq 0 ] && exit 0
+        # No -y: Flatpak shows the permissions each app asks for and waits for "y"
+        flatpak install --user flathub "${apps[@]}"
+        ;;
+    flatpak-remove)
+        mapfile -t apps < <(
+            flatpak list --app --columns=application,name | sort -t$'\t' -k2 -f |
+                awk -F'\t' '{ printf "%s\t%s  \033[90m%s\033[0m\n", $1, $2, $1 }' |
+                pick "Remove (Flatpak)" 'flatpak info {1}')
+        [ ${#apps[@]} -eq 0 ] && exit 0
+        flatpak uninstall -y -- "${apps[@]}"
+        ;;
+    update)
+        heading "System packages (dnf)"
+        sudo dnf upgrade --refresh
+        heading "Flatpak apps"
+        # No -y: updates that ask for new permissions are shown and wait for "y"
+        flatpak update
+        ;;
+    firmware)
+        heading "Firmware (fwupd)"
+        fwupdmgr refresh --force
+        fwupdmgr update
+        ;;
+    *)
+        # Usage: the "launcher-pkg ..." lines of the header above
+        sed -n 's/^#   \(launcher-pkg .*\)/\1/p' "$0"
+        exit 1
+        ;;
+esac
+finish

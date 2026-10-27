@@ -1,0 +1,7 @@
+SDDM login theme matching the Quickshell lock screen (~/.config/quickshell/LockScreen.qml).
+
+SDDM can't read the home folder, so install a copy:
+    sudo cp -r ~/.config/sddm-theme/tokyo-night /usr/share/sddm/themes/
+    printf '[Theme]\nCurrent=tokyo-night\n' | sudo tee /etc/sddm.conf.d/10-theme.conf
+Revert: sudo rm /etc/sddm.conf.d/10-theme.conf  (back to Fedora's 03-sway-fedora)
+Preview in a window: sddm-greeter-qt6 --test-mode --theme ~/.config/sddm-theme/tokyo-night

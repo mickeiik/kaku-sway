@@ -1,0 +1,33 @@
+/* Tokyo Night palette and square corners: shared with GTK 4 apps */
+@import url("../gtk-4.0/gtk.css");
+
+/* GTK 3 only */
+/* Classic GTK3 names some apps (Thunar) use to draw selections themselves */
+@define-color theme_selected_bg_color #3d59a1;
+@define-color theme_selected_fg_color #ffffff;
+@define-color theme_unfocused_selected_bg_color #2f3b5e;
+@define-color theme_unfocused_selected_fg_color #c0caf5;
+
+/* Selected items in file views and lists: solid colors and square corners.
+   The theme uses a translucent blue, which Thunar applies to selected icons
+   without the transparency, turning them black. */
+.view:selected, .view:selected:focus, iconview:selected, iconview:selected:focus,
+.view text:selected, iconview text:selected,
+treeview.view:selected, treeview.view:selected:focus {
+    background-color: @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+    border-radius: 0;
+}
+.view:selected:backdrop, iconview:selected:backdrop,
+.view text:selected:backdrop, iconview text:selected:backdrop,
+treeview.view:selected:backdrop {
+    background-color: @theme_unfocused_selected_bg_color;
+    color: @theme_unfocused_selected_fg_color;
+}
+
+/* Thunar tints selected icons with the view's background: "selected" state when
+   focused (transparent, so no tint) and "active" when not focused (the view's
+   near-black, which turns icons black). Keep both transparent. */
+.standard-view .view:active {
+    background-color: transparent;
+}
