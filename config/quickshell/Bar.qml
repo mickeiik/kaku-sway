@@ -9,6 +9,7 @@ PanelWindow {
     // Name of the open popup panel ("" = none) and where to centre it
     property string openPanel: ""
     property real panelX: 0
+    property var trayItem: null // the tray icon whose menu is open (TrayMenu.qml)
 
     function toggle(name, item) {
         if (openPanel === name) {

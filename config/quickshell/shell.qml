@@ -1,4 +1,6 @@
 //@ pragma IconTheme Papirus-Dark
+// Needed for the tray icons' right-click menus
+//@ pragma UseQApplication
 // Sway desktop shell: one bar per screen, popup panels opened from it, and the app launcher.
 import QtQuick
 import Quickshell
@@ -39,6 +41,7 @@ ShellRoot {
             LazyLoader { active: barWindow.openPanel === "display"; DisplayPanel { bar: barWindow } }
             LazyLoader { active: barWindow.openPanel === "battery"; BatteryPanel { bar: barWindow } }
             LazyLoader { active: barWindow.openPanel === "calendar"; CalendarPanel { bar: barWindow } }
+            LazyLoader { active: barWindow.openPanel.startsWith("tray:"); TrayMenu { bar: barWindow } }
         }
     }
 

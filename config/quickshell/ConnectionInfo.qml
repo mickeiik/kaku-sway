@@ -205,6 +205,7 @@ ColumnLayout {
                 visible: root.info.ip6?.length > 0
                 label: "IPv6"
                 value: root.info.ip6?.[0] ?? "—"
+                maxValueWidth: 120 // a few groups, then "…" (click copies it all)
                 copyable: true
             }
             InfoRow { label: "Gateway"; value: root.info.gateway ?? "—"; copyable: true }

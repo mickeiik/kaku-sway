@@ -33,13 +33,17 @@ RowLayout {
                 anchors.fill: parent
                 hoverEnabled: true
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
+                // Left click opens the app; right click, or apps with only a menu: our menu.
+                // Electron apps (id "<App>_status_icon_<n>", e.g. Claude Desktop) often
+                // ignore the left click, so they get the menu too.
                 onClicked: m => {
                     const d = item.modelData;
-                    if (m.button === Qt.LeftButton && !d.onlyMenu) {
+                    const menuOnly = d.onlyMenu || /_status_icon_\d+$/.test(d.id);
+                    if (m.button === Qt.LeftButton && !(menuOnly && d.hasMenu)) {
                         d.activate();
                     } else if (d.hasMenu) {
-                        const p = item.mapToItem(null, 0, item.height);
-                        d.display(root.bar, p.x, p.y);
+                        root.bar.trayItem = d;
+                        root.bar.toggle("tray:" + d.id, item);
                     }
                 }
             }

@@ -11,7 +11,7 @@ Popout {
     // Connected first, then strongest signal
     readonly property var networks: (wifi?.networks.values ?? []).filter(n => n.name).sort((a, b) => (b.connected - a.connected) || (b.signalStrength - a.signalStrength))
 
-    cardWidth: connection.visible ? 600 : 380
+    cardWidth: connection.visible ? 500 : 380
 
     // Scan only while the panel is open
     Component.onCompleted: if (wifi) wifi.scannerEnabled = true
