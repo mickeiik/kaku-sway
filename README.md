@@ -4,7 +4,7 @@ A Fedora Sway desktop built with [Quickshell](https://quickshell.org): Tokyo Nig
 square corners everywhere (*kaku*, 角, is Japanese for "square / corner"), and only
 official Fedora packages.
 
-![Desktop](screenshots/desktop.png)
+![Lock screen: the squares line up as you type, sulk at a wrong password, and rush away on unlock](screenshots/lock.gif)
 
 ## What's in it
 
@@ -27,9 +27,12 @@ setup:
 - **Login screen** (SDDM theme) matching the lock screen.
 - Low battery warnings, automatic night light (sunset to sunrise), clipboard history.
 
+![Login screen](screenshots/login.gif)
+
 | | |
 | --- | --- |
-| ![Launcher](screenshots/launcher.png) | ![Sound panel](screenshots/panel-volume.png) |
+| ![Desktop](screenshots/desktop.png) | ![Launcher](screenshots/launcher.png) |
+| ![Sound panel](screenshots/panel-volume.png) | ![Notification](screenshots/notification.png) |
 | ![Display panel](screenshots/panel-display.png) | ![Battery panel](screenshots/panel-battery.png) |
 | ![Calendar](screenshots/panel-calendar.png) | ![Volume indicator](screenshots/osd.png) |
 
