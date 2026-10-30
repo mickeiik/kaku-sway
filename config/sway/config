@@ -14,8 +14,8 @@ set $menu qs ipc call launcher toggle
 font pango:JetBrains Mono 9
 default_border pixel 2
 default_floating_border pixel 2
-gaps inner 6
-gaps outer 2
+gaps inner 0
+gaps outer 0
 output * bg ~/Pictures/Wallpapers/tokyo-night.png fill #1a1b26
 
 #                       border  bg      text    indicator child_border
