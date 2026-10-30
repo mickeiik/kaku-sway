@@ -76,6 +76,7 @@ PanelWindow {
         anchors.verticalCenter: parent.verticalCenter
         spacing: 0
 
+        AiUsageButton { bar: bar }
         Tray { bar: bar }
         BluetoothButton { bar: bar }
         NetworkButton { bar: bar }
