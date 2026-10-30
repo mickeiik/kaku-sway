@@ -50,13 +50,14 @@ PanelWindow {
         bar: bar
     }
 
-    // Right of the clock: pending updates, screen recording
+    // Right of the clock: pending updates, screen recording, dictation
     Row {
         anchors.left: clockButton.right
         anchors.verticalCenter: parent.verticalCenter
 
         UpdatesButton {}
         RecordingButton {}
+        DictationButton {}
     }
 
     // Left of the clock: night light, caffeine

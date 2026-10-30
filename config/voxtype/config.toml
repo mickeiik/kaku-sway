@@ -1,0 +1,46 @@
+# Speech to text (https://github.com/peteonrails/voxtype). Hold Super+D to dictate:
+# the key is bound in ~/.config/sway/config.d/60-bindings-dictation.conf, and the bar
+# shows when it's listening. Full list of options: /usr/share/doc/voxtype or
+# `voxtype configure`. After changes: systemctl --user restart voxtype
+
+# NVIDIA Parakeet: fast on a laptop CPU, detects the language (25 European ones).
+# Needs voxtype's ONNX build: the service runs ~/.local/bin/voxtype-onnx (see
+# ~/.config/systemd/user/voxtype.service.d/parakeet.conf)
+engine = "parakeet"
+
+# Read by the bar (DictationService.qml)
+state_file = "auto"
+
+[hotkey]
+# Sway handles the key
+enabled = false
+
+[audio]
+device = "default"
+sample_rate = 16000
+max_duration_secs = 120
+
+[parakeet]
+# ~2.6 GB, downloaded by install.sh. Smaller (~670 MB), a bit less accurate:
+# "parakeet-tdt-0.6b-v3-int8". After changing it:
+# voxtype-onnx setup --download --model <name>
+model = "parakeet-tdt-0.6b-v3"
+
+[output]
+mode = "type"
+fallback_to_clipboard = true
+# Sway modes from 60-bindings-dictation.conf: release keys to stop while listening,
+# and held modifier keys ignored while the text is typed
+pre_recording_command = "swaymsg mode voxtype_recording"
+pre_output_command = "swaymsg mode voxtype_suppress"
+post_output_command = "swaymsg mode default"
+
+[output.notification]
+on_recording_start = false
+on_recording_stop = false
+on_transcription = false # the text appears where you type
+on_no_speech = true
+
+[osd]
+# The bar shows it instead
+enabled = false

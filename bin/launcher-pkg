@@ -6,6 +6,8 @@
 #   launcher-pkg flatpak-remove   browse installed Flatpak apps, remove the selected ones
 #   launcher-pkg update           update the system (dnf) and Flatpak apps
 #   launcher-pkg firmware         update BIOS and device firmware (fwupd)
+#   launcher-pkg voxtype-check    print "voxtype" if a newer voxtype is out (for the bar)
+#   launcher-pkg voxtype-update   install voxtype, or update it if a newer one is out
 
 # Tokyo Night, square borders
 FZF_THEME=(
@@ -32,6 +34,48 @@ mark_installed() {
 
 heading() {
     echo -e "\n\033[1;34m== $*\033[0m"
+}
+
+# voxtype (speech to text) isn't in Fedora's repos, so dnf doesn't update it: it comes
+# from its GitHub releases. Major version pinned (kaku-sway uses its state file, output
+# hooks and record commands): only stable 1.x releases.
+VOXTYPE_MAJOR=1
+
+# Prints "version<TAB>RPM url" of the newest stable voxtype release, nothing offline
+voxtype_release() {
+    curl -fsSL --max-time 15 "https://api.github.com/repos/peteonrails/voxtype/releases?per_page=30" |
+        jq -r --arg re "^v${VOXTYPE_MAJOR}\\.[0-9]+\\.[0-9]+$" '
+            [.[] | select(.draft == false and .prerelease == false and (.tag_name | test($re)))] | first // empty
+            | [(.tag_name | ltrimstr("v")),
+               ([.assets[] | select(.name | test("^voxtype-.*\\.x86_64\\.rpm$")) | .browser_download_url] | first // empty)]
+            | select(.[1] != "") | @tsv' 2>/dev/null
+}
+
+# True if version $1 is newer than the installed voxtype (or voxtype isn't installed)
+voxtype_newer() {
+    local installed
+    installed=$(rpm -q --qf '%{VERSION}' voxtype 2>/dev/null) || return 0
+    [ "$1" != "$installed" ] && [ "$(printf '%s\n%s\n' "$1" "$installed" | sort -V | tail -1)" = "$1" ]
+}
+
+voxtype_update() {
+    local version url rpm_file
+    IFS=$'\t' read -r version url < <(voxtype_release)
+    if [ -z "$url" ]; then
+        echo "Couldn't reach GitHub to check voxtype"
+        return 1
+    fi
+    if ! voxtype_newer "$version"; then
+        echo "voxtype $version is up to date"
+        return 0
+    fi
+    rpm_file=$(mktemp --suffix=.rpm)
+    curl -fL -o "$rpm_file" "$url" && sudo dnf install -y "$rpm_file"
+    local status=$?
+    rm -f "$rpm_file"
+    # The daemon keeps running the old binary until restarted
+    [ $status -eq 0 ] && systemctl --user try-restart voxtype
+    return $status
 }
 
 finish() {
@@ -93,11 +137,25 @@ case "$1" in
         heading "Flatpak apps"
         # No -y: updates that ask for new permissions are shown and wait for "y"
         flatpak update
+        # Only if it's installed: it may have been removed on purpose
+        if rpm -q voxtype >/dev/null 2>&1; then
+            heading "Speech to text (voxtype, from GitHub)"
+            voxtype_update
+        fi
         ;;
     firmware)
         heading "Firmware (fwupd)"
         fwupdmgr refresh --force
         fwupdmgr update
+        ;;
+    voxtype-check)
+        IFS=$'\t' read -r version url < <(voxtype_release)
+        rpm -q voxtype >/dev/null 2>&1 && [ -n "$url" ] && voxtype_newer "$version" && echo voxtype
+        exit 0
+        ;;
+    voxtype-update)
+        voxtype_update
+        exit
         ;;
     *)
         # Usage: the "launcher-pkg ..." lines of the header above

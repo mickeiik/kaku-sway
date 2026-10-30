@@ -37,7 +37,8 @@ Singleton {
         [/^mode "?resize/, "Resize mode (arrows, Enter to finish)"],
         [/grimshot.*\boutput\b/, "Screenshot of the screen"],
         [/grimshot.*\bactive\b/, "Screenshot of the window"],
-        [/grimshot.*\barea\b/, "Screenshot of an area"]
+        [/grimshot.*\barea\b/, "Screenshot of an area"],
+        [/voxtype record/, "Dictate (hold, speak, let go)"]
     ]
 
     // Media keys get their name from the key itself

@@ -1,0 +1,8 @@
+#!/bin/sh
+# voxtype's ONNX build, which has the Parakeet engine (/usr/bin/voxtype only has
+# Whisper). Used by the voxtype service and to download its model; takes the same
+# arguments as voxtype. The fastest variant this CPU runs, like /usr/bin/voxtype does.
+if grep -q avx512f /proc/cpuinfo 2>/dev/null; then
+    exec /usr/lib/voxtype/voxtype-onnx-avx512 "$@"
+fi
+exec /usr/lib/voxtype/voxtype-onnx-avx2 "$@"

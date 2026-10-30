@@ -1,4 +1,5 @@
-# Fedora packages kaku-sway needs (official repos). Installed by install.sh.
+# Fedora packages kaku-sway needs. Installed by install.sh (which can also add
+# voxtype, for speech to text, from its GitHub releases).
 sway-config-fedora      # Sway, as set up by the Fedora Sway spin
 swayidle                # lock and screen off when idle
 swaylock                # fallback lock screen if Quickshell isn't running
@@ -16,7 +17,7 @@ playerctl               # media players (Now Playing)
 wlsunset                # night light
 wl-clipboard            # clipboard
 cliphist                # clipboard history (Ctrl+Super+V)
-wtype                   # Super+C / Super+V copy and paste in any app
+wtype                   # Super+C / Super+V copy and paste in any app, dictation typing
 grim                    # screenshots
 slurp                   # screenshot area selection
 grimshot                # screenshots (Print keys)

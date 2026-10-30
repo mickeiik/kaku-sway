@@ -3,7 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Number of pending updates (dnf + Flatpak).
+// Number of pending updates (dnf + Flatpak + voxtype, which comes from GitHub).
 // Run as the user, dnf reads its own metadata cache (~/.cache/libdnf5), not the
 // system one that dnf-makecache.timer refreshes (and that timer is skipped on
 // battery). So the check refreshes that user cache itself first: "dnf makecache"
@@ -63,6 +63,7 @@ Singleton {
             fi
             tail -n +2 "$cache" 2>/dev/null
             flatpak remote-ls --updates --cached --columns=application 2>/dev/null
+            "$HOME/.local/bin/launcher-pkg" voxtype-check 2>/dev/null
         `]
         stdout: StdioCollector {
             onStreamFinished: root.count = text.split("\n").filter(l => l.trim()).length

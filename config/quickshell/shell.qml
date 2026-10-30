@@ -64,6 +64,9 @@ ShellRoot {
     // Volume / brightness indicator for the media keys
     Osd {}
 
+    // Microphone level while dictating (Super+D)
+    DictationOsd {}
+
     // Password window when an app asks for admin rights (polkit agent)
     PolkitDialog {}
 

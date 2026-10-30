@@ -89,7 +89,12 @@ PanelWindow {
         { name: "Defaults", icon: "preferences-desktop-default-applications", keywords: "default apps applications open with browser editor viewer player par defaut", menu: "defaults" },
         { name: "Keyboard layout", icon: "preferences-desktop-keyboard", keywords: "layout switch azerty qwerty clavier french english",
           run: () => KeyboardService.next(), stay: true, live: () => KeyboardService.name }
-    ]
+    ].concat(DictationService.installed ? [
+        // voxtype's own settings screen, in its Parakeet build (bin/voxtype-onnx) so that
+        // engine shows as available
+        { name: "Speech to text", icon: "audio-input-microphone", keywords: "dictation voice voxtype parakeet whisper microphone dictee voix reconnaissance vocale",
+          run: exec(["foot", "--app-id=launcher-term", "--title=Speech to text", "-e", Quickshell.env("HOME") + "/.local/bin/voxtype-onnx", "configure"]) }
+    ] : [])
 
     readonly property var systemItems: [
         { name: "Lock", icon: "system-lock-screen", keywords: "screen verrouiller", run: exec([Quickshell.env("HOME") + "/.local/bin/lock-screen"]) },
