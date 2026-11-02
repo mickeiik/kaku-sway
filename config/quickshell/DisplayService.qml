@@ -27,9 +27,13 @@ Singleton {
     }
 
     // swaymsg output <name> <setting...>, and saved (an output's line for that setting
-    // replaced; "enable" just drops its "disable" line)
+    // replaced; "enable" just drops its "disable" line).
+    // A screen is focused before being turned off: Sway deletes its workspace if it's
+    // empty, and Quickshell 0.2.1 crashes on that unless the workspace has focus (fixed
+    // upstream in d4c9297, after the version Fedora has).
     function apply(name, setting, value) {
         Quickshell.execDetached(["sh", "-c", `
+            [ "$2" = disable ] && swaymsg -q focus output "$1"
             swaymsg output "$1" $2 $3
             f=~/.config/sway/config.d/20-outputs.conf
             touch "$f"
