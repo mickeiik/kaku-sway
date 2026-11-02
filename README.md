@@ -15,7 +15,8 @@ setup:
   updates, Claude and ChatGPT plan usage (if Claude Code / Codex is signed in).
 - **Panels** that drop down from the bar: sound (devices, per-app volume, what's
   playing), network (Wi-Fi, connection details, live traffic), Bluetooth, display
-  (text size; per screen: on/off, brightness, monitors included over DDC/CI, scale),
+  (text size; per screen: on/off, brightness, monitors included over DDC/CI, HDR,
+  scale),
   battery (health, power modes), calendar, AI usage limits and when they reset.
 - **Launcher** (Super+Space): apps, plus menus for screenshots and recording, tools
   (night light, keyboard shortcuts, calculator, clipboard history), installing and
@@ -61,6 +62,10 @@ rest, in the launcher's Update.
 The keyboard is French AZERTY with US as second layout (Alt+Shift switches): change
 `xkb_layout` in `config/sway/config.d/10-input.conf` for yours. Dates are in French
 (`locale` in `config/quickshell/Theme.qml`).
+
+HDR (the display panel shows it for screens that take HDR10) needs Sway 1.12 (Fedora
+45) and its Vulkan renderer, which wlroots still calls experimental: put
+`WLR_RENDERER=vulkan` in a file in `~/.config/environment.d/` and log in again.
 
 ## Keys
 

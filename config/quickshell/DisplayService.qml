@@ -5,17 +5,24 @@ import Quickshell.I3
 import Quickshell.Io
 
 // The screens as Sway sees them, turned-off ones included (swaymsg -t get_outputs):
-// on/off and scale, set from the display panel. Both are also written to
+// on/off, scale and HDR, set from the display panel. They're also written to
 // ~/.config/sway/config.d/20-outputs.conf (not synced: it's per machine), so they
 // survive a restart.
 // One screen always stays on: the last one can't be turned off, and if none is on
 // (the screen left on was unplugged, or it's the only one at login) they're all
 // turned back on. shell.qml creates this from the start for that.
+//
+// HDR (Sway 1.12+) is offered for screens whose EDID says they take HDR10, and needs
+// Sway's Vulkan renderer (WLR_RENDERER=vulkan at login): when Sway refuses it,
+// hdrRefused names that screen, for the panel to say so.
 Singleton {
     id: root
 
-    property var outputs: [] // get_outputs objects: name, active, current_mode, scale...
+    property var outputs: [] // get_outputs objects: name, active, current_mode, scale, hdr...
     readonly property int activeCount: outputs.filter(o => o.active).length
+    property var hdrCapable: [] // screen names
+    property string hdrRefused: ""
+    property string hdrAsked: "" // screen whose HDR was just turned on, checked by hdrCheck
 
     function setEnabled(name, on) {
         if (!on && activeCount <= 1)
@@ -24,6 +31,13 @@ Singleton {
     }
     function setScale(name, scale) {
         apply(name, "scale", String(scale));
+    }
+    function setHdr(name, on) {
+        hdrRefused = "";
+        hdrAsked = on ? name : "";
+        apply(name, "hdr", on ? "on" : "off");
+        if (on)
+            hdrCheck.restart();
     }
 
     // swaymsg output <name> <setting...>, and saved (an output's line for that setting
@@ -55,7 +69,10 @@ Singleton {
     // Plugged, unplugged, turned on or off
     Connections {
         target: Quickshell
-        function onScreensChanged() { root.refresh(); }
+        function onScreensChanged() {
+            root.refresh();
+            hdrReader.running = true;
+        }
     }
     Connections {
         target: I3
@@ -70,6 +87,18 @@ Singleton {
         id: rereadAfter
         interval: 300
         onTriggered: root.refresh()
+    }
+
+    // Turning HDR on changes the screen's mode: give it time, then see whether it took
+    Timer {
+        id: hdrCheck
+        interval: 1500
+        onTriggered: {
+            const o = root.outputs.find(o => o.name === root.hdrAsked);
+            if (o && !o.hdr)
+                root.hdrRefused = root.hdrAsked;
+            root.hdrAsked = "";
+        }
     }
 
     Process {
@@ -91,6 +120,31 @@ Singleton {
                 }
                 I3.refreshMonitors();
             }
+        }
+    }
+
+    // Screens that take HDR10: the HDR static metadata block of their EDID (CTA-861
+    // extended tag 6) lists the PQ transfer function (bit 2)
+    Process {
+        id: hdrReader
+        running: true
+        command: ["python3", "-I", "-c", `
+import glob, re
+for f in glob.glob("/sys/class/drm/card*-*/edid"):
+    d = open(f, "rb").read()
+    for i in range(1, len(d) // 128):
+        b = d[i * 128:(i + 1) * 128]
+        if b[0] != 2:
+            continue
+        p = 4
+        while p < b[2]:
+            tag, n = b[p] >> 5, b[p] & 31
+            if tag == 7 and n >= 2 and b[p + 1] == 6 and b[p + 2] & 4:
+                print(re.sub(r"^card[0-9]+-", "", f.split("/")[4]))
+            p += 1 + n
+`]
+        stdout: StdioCollector {
+            onStreamFinished: root.hdrCapable = text.split("\n").filter(n => n)
         }
     }
 }

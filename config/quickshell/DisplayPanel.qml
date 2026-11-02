@@ -26,7 +26,7 @@ Popout {
         onMoved: v => TextSizeService.set(TextSizeService.minPx + v * root.textRange)
     }
 
-    // Per screen: on/off, brightness, scale
+    // Per screen: on/off, brightness, HDR, scale
     Repeater {
         model: DisplayService.outputs
 
@@ -66,6 +66,22 @@ Popout {
                 value: BrightnessService.level(screen.name) / 100
                 label: BrightnessService.level(screen.name) + "%"
                 onMoved: v => BrightnessService.set(screen.name, v * 100)
+            }
+
+            // Only for screens that take HDR10
+            ToggleRow {
+                visible: screen.active && DisplayService.hdrCapable.includes(screen.name)
+                text: "HDR"
+                checked: screen.modelData.hdr ?? false
+                onToggled: DisplayService.setHdr(screen.name, !checked)
+            }
+            Label {
+                visible: screen.active && DisplayService.hdrRefused === screen.name
+                text: "Sway couldn't turn HDR on: it needs its Vulkan renderer (WLR_RENDERER=vulkan at login)."
+                color: Theme.muted
+                font.pixelSize: Theme.fontSize - 2
+                wrapMode: Text.Wrap
+                Layout.fillWidth: true
             }
 
             RowLayout {
