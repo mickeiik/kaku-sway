@@ -4,7 +4,7 @@
 #   launcher-pkg remove           browse packages you installed, remove the selected ones
 #   launcher-pkg flatpak-install  browse Flathub apps, install the selected ones
 #   launcher-pkg flatpak-remove   browse installed Flatpak apps, remove the selected ones
-#   launcher-pkg update           update the system (dnf) and Flatpak apps
+#   launcher-pkg update           update the system (dnf), Flatpak apps and mise's dev tools
 #   launcher-pkg firmware         update BIOS and device firmware (fwupd)
 #   launcher-pkg voxtype-check    print "voxtype" if a newer voxtype is out (for the bar)
 #   launcher-pkg voxtype-update   install voxtype, or update it if a newer one is out
@@ -137,6 +137,10 @@ case "$1" in
         heading "Flatpak apps"
         # No -y: updates that ask for new permissions are shown and wait for "y"
         flatpak update
+        if command -v mise >/dev/null; then
+            heading "Dev tools (mise)"
+            mise upgrade
+        fi
         # Only if it's installed: it may have been removed on purpose
         if rpm -q voxtype >/dev/null 2>&1; then
             heading "Speech to text (voxtype, from GitHub)"
