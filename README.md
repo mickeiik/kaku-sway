@@ -16,7 +16,7 @@ setup:
 - **Panels** that drop down from the bar: sound (devices, per-app volume, what's
   playing), network (Wi-Fi, connection details, live traffic), Bluetooth, display
   (text size; per screen: on/off, main screen, brightness, monitors included over
-  DDC/CI, HDR, scale),
+  DDC/CI, HDR, scale; all still set after a restart),
   battery (health, power modes), calendar, AI usage limits and when they reset.
 - **Launcher** (Super+Space): apps, plus menus for screenshots and recording, tools
   (night light, keyboard shortcuts, calculator, clipboard history), installing and

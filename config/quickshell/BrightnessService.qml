@@ -15,6 +15,9 @@ import Quickshell.Io
 // background (a monitor takes ~50 ms per change: at most one every 250 ms, ending on
 // the latest value), re-read on startup, when screens come and go, and when the
 // display panel opens.
+// Monitors' levels are also kept in ~/.local/state/quickshell/brightness and set
+// again when a monitor shows up (login, plugged in): some forget theirs when turned
+// off. The built-in screen's backlight is restored by systemd.
 //
 // This laptop's brightness keys come from the firmware, which repeats a held key only
 // every ~250 ms (the keyboard's volume keys: every 40 ms). So each key step glides
@@ -35,6 +38,9 @@ Singleton {
     // Not bound to anything: write bookkeeping
     property var pending: ({}) // screen name -> percent waiting to be written
     property var lastWrite: ({}) // screen name -> time of its last write
+    property var saved: ({}) // monitor name -> percent, as kept in stateFile
+
+    readonly property string stateFile: Quickshell.env("HOME") + "/.local/state/quickshell/brightness"
 
     signal indicate() // show the on-screen indicator (keys, scrolling on the bar icon)
 
@@ -77,6 +83,15 @@ Singleton {
         levels = Object.assign({}, levels, { [name]: value });
         pending[name] = value;
         flush();
+        if (devices[name].kind === "ddc") {
+            saved[name] = value;
+            saveTimer.restart();
+        }
+    }
+    // "<monitor name> <percent>" per line
+    function save() {
+        const lines = Object.keys(saved).map(name => name + " " + saved[name]).join("\n");
+        Quickshell.execDetached(["sh", "-c", 'mkdir -p "$(dirname "$1")" && printf "%s\\n" "$2" > "$1"', "save", stateFile, lines]);
     }
     // Writes the waiting levels whose screen can take one now; the others on the next tick
     function flush() {
@@ -129,13 +144,27 @@ Singleton {
                 next[name] = devices[name];
         }
         const lv = Object.assign({}, levels);
+        const restore = []; // monitors that just showed up with another level than saved
+        let changed = false; // or changed on the monitor itself: kept as the new level
         for (const f of found) {
+            if (kind === "ddc" && saved[f.name] !== f.percent) {
+                if (devices[f.name] === undefined && saved[f.name] !== undefined) {
+                    restore.push(f.name);
+                } else if (!busy(f.name)) {
+                    saved[f.name] = f.percent;
+                    changed = true;
+                }
+            }
             next[f.name] = f.device;
             if (!busy(f.name))
                 lv[f.name] = f.percent;
         }
+        if (changed)
+            saveTimer.restart();
         devices = next;
         levels = lv;
+        for (const name of restore)
+            show(name, saved[name]);
     }
 
     IpcHandler {
@@ -184,6 +213,13 @@ Singleton {
         }
     }
 
+    // Saved once the level stops changing
+    Timer {
+        id: saveTimer
+        interval: 1000
+        onTriggered: root.save()
+    }
+
     Timer {
         id: flushTimer
         interval: 50
@@ -211,13 +247,28 @@ Singleton {
         }
     }
 
+    // The saved levels, then the monitors (which compares with them)
+    Process {
+        running: true
+        command: ["cat", root.stateFile]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                for (const line of text.split("\n")) {
+                    const [name, p] = line.trim().split(" ");
+                    if (name && !isNaN(parseInt(p)))
+                        root.saved[name] = parseInt(p);
+                }
+                monitorReader.running = true;
+            }
+        }
+    }
+
     // Monitors that answer DDC/CI: "<bus> <screen name> <current> <max>" per line.
     // ddcutil detect --brief lists "Display N" (or "Invalid display": no DDC/CI) with
     // "I2C bus: /dev/i2c-5" and "DRM connector: card1-DP-2"; getvcp 10 --brief prints
     // "VCP 10 C <current> <max>".
     Process {
         id: monitorReader
-        running: true
         command: ["sh", "-c", `
             command -v ddcutil >/dev/null || exit 0
             ddcutil detect --brief 2>/dev/null | awk '
