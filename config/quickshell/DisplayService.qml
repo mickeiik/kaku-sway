@@ -5,12 +5,15 @@ import Quickshell.I3
 import Quickshell.Io
 
 // The screens as Sway sees them, turned-off ones included (swaymsg -t get_outputs):
-// on/off, scale and HDR, set from the display panel. They're also written to
-// ~/.config/sway/config.d/20-outputs.conf (not synced: it's per machine), so they
-// survive a restart.
+// on/off, scale, HDR and the main screen, set from the display panel. They're also
+// written to ~/.config/sway/config.d/20-outputs.conf (not synced: it's per machine),
+// so they survive a restart.
 // One screen always stays on: the last one can't be turned off, and if none is on
 // (the screen left on was unplugged, or it's the only one at login) they're all
 // turned back on. shell.qml creates this from the start for that.
+//
+// The main screen is where workspace 1 is and what has focus at login (the launcher,
+// notifications and indicators follow the focused screen). Sway has no "primary".
 //
 // HDR (Sway 1.12+) is offered for screens whose EDID says they take HDR10, and needs
 // Sway's Vulkan renderer (WLR_RENDERER=vulkan at login): when Sway refuses it,
@@ -23,6 +26,7 @@ Singleton {
     property var hdrCapable: [] // screen names
     property string hdrRefused: ""
     property string hdrAsked: "" // screen whose HDR was just turned on, checked by hdrCheck
+    property string primary: "" // the main screen ("": none chosen)
 
     function setEnabled(name, on) {
         if (!on && activeCount <= 1)
@@ -31,6 +35,19 @@ Singleton {
     }
     function setScale(name, scale) {
         apply(name, "scale", String(scale));
+    }
+    // Workspace 1 moves there now (and is shown); at login it's put there and focused
+    function setPrimary(name) {
+        primary = name;
+        Quickshell.execDetached(["sh", "-c", `
+            swaymsg -q "workspace 1 output $1"
+            swaymsg -q "workspace number 1; move workspace to output $1"
+            f=~/.config/sway/config.d/20-outputs.conf
+            touch "$f"
+            sed -i '/^workspace 1 output /d; /^exec swaymsg -q focus output /d' "$f"
+            printf 'workspace 1 output %s\nexec swaymsg -q focus output %s\n' "$1" "$1" >> "$f"
+        `, "main-screen", name]);
+        rereadAfter.restart();
     }
     function setHdr(name, on) {
         hdrRefused = "";
@@ -120,6 +137,15 @@ Singleton {
                 }
                 I3.refreshMonitors();
             }
+        }
+    }
+
+    // The saved main screen
+    Process {
+        running: true
+        command: ["sh", "-c", "sed -n 's/^workspace 1 output //p' ~/.config/sway/config.d/20-outputs.conf 2>/dev/null"]
+        stdout: StdioCollector {
+            onStreamFinished: root.primary = text.trim()
         }
     }
 

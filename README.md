@@ -15,8 +15,8 @@ setup:
   updates, Claude and ChatGPT plan usage (if Claude Code / Codex is signed in).
 - **Panels** that drop down from the bar: sound (devices, per-app volume, what's
   playing), network (Wi-Fi, connection details, live traffic), Bluetooth, display
-  (text size; per screen: on/off, brightness, monitors included over DDC/CI, HDR,
-  scale),
+  (text size; per screen: on/off, main screen, brightness, monitors included over
+  DDC/CI, HDR, scale),
   battery (health, power modes), calendar, AI usage limits and when they reset.
 - **Launcher** (Super+Space): apps, plus menus for screenshots and recording, tools
   (night light, keyboard shortcuts, calculator, clipboard history), installing and

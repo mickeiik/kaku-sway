@@ -26,7 +26,7 @@ Popout {
         onMoved: v => TextSizeService.set(TextSizeService.minPx + v * root.textRange)
     }
 
-    // Per screen: on/off, brightness, HDR, scale
+    // Per screen: on/off, brightness, main screen, HDR, scale
     Repeater {
         model: DisplayService.outputs
 
@@ -66,6 +66,15 @@ Popout {
                 value: BrightnessService.level(screen.name) / 100
                 label: BrightnessService.level(screen.name) + "%"
                 onMoved: v => BrightnessService.set(screen.name, v * 100)
+            }
+
+            // With several screens on: picking another one moves the main screen there
+            ToggleRow {
+                visible: screen.active && DisplayService.activeCount > 1
+                text: "Main screen"
+                checked: DisplayService.primary === screen.name
+                enabled: !checked
+                onToggled: DisplayService.setPrimary(screen.name)
             }
 
             // Only for screens that take HDR10
