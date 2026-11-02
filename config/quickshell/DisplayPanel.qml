@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.I3
 
 Popout {
     id: root
@@ -11,40 +10,66 @@ Popout {
 
     cardWidth: 340
 
+    // Monitors' brightness may have been changed on the monitor itself
+    Component.onCompleted: {
+        DisplayService.refresh();
+        BrightnessService.refresh();
+    }
+
     PanelHeader { title: "Display" }
 
     SliderRow {
-        visible: BrightnessService.available // no backlight on external monitors
-        icon: ""
-        iconColor: Theme.yellow
-        value: BrightnessService.percent / 100
-        label: BrightnessService.percent + "%"
-        onMoved: v => BrightnessService.set(v * 100)
-    }
-
-    SliderRow {
-        icon: ""
+        icon: "\uf031"
         iconColor: Theme.accent
         value: (TextSizeService.px - TextSizeService.minPx) / root.textRange
         label: TextSizeService.px + " px"
         onMoved: v => TextSizeService.set(TextSizeService.minPx + v * root.textRange)
     }
 
-    // Scale picker, per screen
+    // Per screen: on/off, brightness, scale
     Repeater {
-        model: I3.monitors
+        model: DisplayService.outputs
 
         ColumnLayout {
             id: screen
             required property var modelData
+            readonly property string name: modelData.name
+            readonly property bool active: modelData.active
             Layout.fillWidth: true
             spacing: 6
 
-            SectionLabel {
-                text: screen.modelData.name + " · " + screen.modelData.lastIpcObject.current_mode?.width + "×" + screen.modelData.lastIpcObject.current_mode?.height
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+
+                SectionLabel {
+                    text: [screen.name, screen.modelData.model,
+                        screen.active ? screen.modelData.current_mode?.width + "×" + screen.modelData.current_mode?.height : "Off"]
+                        .filter(s => s).join(" · ")
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+                // The last screen on can't be turned off
+                Toggle {
+                    Layout.topMargin: 6
+                    checked: screen.active
+                    enabled: !screen.active || DisplayService.activeCount > 1
+                    opacity: enabled ? 1 : 0.4
+                    onToggled: DisplayService.setEnabled(screen.name, !screen.active)
+                }
+            }
+
+            SliderRow {
+                visible: screen.active && BrightnessService.has(screen.name)
+                icon: "\uf185"
+                iconColor: Theme.yellow
+                value: BrightnessService.level(screen.name) / 100
+                label: BrightnessService.level(screen.name) + "%"
+                onMoved: v => BrightnessService.set(screen.name, v * 100)
             }
 
             RowLayout {
+                visible: screen.active
                 Layout.fillWidth: true
                 spacing: 6
 
@@ -56,27 +81,10 @@ Popout {
                         text: Math.round(modelData * 100) + "%"
                         padding: 7
                         selected: Math.abs(screen.modelData.scale - modelData) < 0.01
-                        onClicked: {
-                            // Apply now, and save it so it survives a restart
-                            Quickshell.execDetached(["sh", "-c", `
-                                swaymsg output "$1" scale "$2"
-                                f=~/.config/sway/config.d/20-outputs.conf
-                                touch "$f"
-                                sed -i "/^output $1 scale /d" "$f"
-                                echo "output $1 scale $2" >> "$f"
-                            `, "set-scale", screen.modelData.name, String(modelData)]);
-                            rereadMonitors.restart();
-                        }
+                        onClicked: DisplayService.setScale(screen.name, modelData)
                     }
                 }
             }
         }
-    }
-
-    // swaymsg runs in the background: re-read the screens once it's applied
-    Timer {
-        id: rereadMonitors
-        interval: 300
-        onTriggered: I3.refreshMonitors()
     }
 }

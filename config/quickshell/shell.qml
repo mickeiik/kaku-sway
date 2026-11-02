@@ -11,6 +11,8 @@ ShellRoot {
 
     // Services are created on first use. The brightness and volume ones must exist from
     // the start for their IPC commands (the keys): the Osd below uses both, so they do.
+    // The display one too, to turn a screen back on if none is (there's no bar then).
+    Component.onCompleted: DisplayService.refresh()
 
     // Uses the browser's own desktop actions ("New Window", "New Private Window"),
     // so it works for any browser, Flatpak ones included.

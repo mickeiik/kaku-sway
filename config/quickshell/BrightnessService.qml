@@ -1,13 +1,20 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.I3
 import Quickshell.Io
 
-// Screen brightness through brightnessctl, shared by the bar, the display panel and
-// the brightness keys (their Sway binding calls `qs ipc call brightness step 1` / `-1`,
-// which also shows the on-screen indicator, see Osd.qml).
+// Brightness of each screen, shared by the bar, the display panel and the brightness
+// keys (their Sway binding calls `qs ipc call brightness step 1` / `-1`, which also
+// shows the on-screen indicator, see Osd.qml).
+//   built-in screen (eDP...)  its backlight, through brightnessctl
+//   monitors                  DDC/CI, through ddcutil (most monitors have it; some
+//                             have it off in their own menu)
+// The keys change the focused screen, scrolling on a bar's display icon that bar's.
 // No polling: the level is shown right away (like the volume), written in the
-// background, then re-read once the changes stop.
+// background (a monitor takes ~50 ms per change: at most one every 250 ms, ending on
+// the latest value), re-read on startup, when screens come and go, and when the
+// display panel opens.
 //
 // This laptop's brightness keys come from the firmware, which repeats a held key only
 // every ~250 ms (the keyboard's volume keys: every 40 ms). So each key step glides
@@ -15,62 +22,150 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    property int percent: 0
-    property bool available: true // false when there's no backlight (e.g. a desktop monitor)
-    property int pending: -1 // value waiting to be written
-    property int target: 0 // where the keys are taking the level (see glide)
+    property var devices: ({}) // screen name -> { kind: "backlight" | "ddc", bus, max }
+    property var levels: ({}) // screen name -> percent
+    property string current: "" // the screen last changed (for the indicator)
+    readonly property int percent: levels[current] ?? 0
+    readonly property bool available: Object.keys(devices).length > 0
+
+    property string gliding: "" // screen the keys are gliding (see glide)
+    property int target: 0 // where the keys are taking its level
     property real lastKey: 0
+
+    // Not bound to anything: write bookkeeping
+    property var pending: ({}) // screen name -> percent waiting to be written
+    property var lastWrite: ({}) // screen name -> time of its last write
 
     signal indicate() // show the on-screen indicator (keys, scrolling on the bar icon)
 
-    // From the slider: straight to that level
-    function set(p) {
-        glide.stop();
-        show(p);
+    function has(name) {
+        return devices[name] !== undefined;
+    }
+    function level(name) {
+        return levels[name] ?? 0;
+    }
+    // Never all the way to 0 on a backlight: on many laptops that turns it off
+    function clamp(name, p) {
+        return Math.max(devices[name]?.kind === "backlight" ? 1 : 0, Math.min(100, Math.round(p)));
+    }
+
+    // From a slider: straight to that level
+    function set(name, p) {
+        if (gliding === name)
+            glide.stop();
+        show(name, p);
     }
     // Steps of 5% (keys: see the IPC step below), gliding there
-    function step(steps, size) {
-        target = Math.max(1, Math.min(100, (glide.running ? target : percent) + steps * (size || 5)));
+    function step(name, steps, size) {
+        if (!has(name))
+            return;
+        if (gliding !== name || !glide.running) {
+            gliding = name;
+            target = level(name);
+        }
+        target = clamp(name, target + steps * (size || 5));
+        current = name;
         glide.start();
         indicate();
     }
 
-    // Shows the level, and writes it: at most once every 50 ms, ending on the latest value
-    function show(p) {
-        pending = Math.max(1, Math.min(100, Math.round(p)));
-        percent = pending;
-        if (!writeLimit.running) {
-            write(pending + "%");
-            pending = -1;
-            writeLimit.start();
+    // Shows the level, and writes it (see flush)
+    function show(name, p) {
+        if (!has(name))
+            return;
+        const value = clamp(name, p);
+        levels = Object.assign({}, levels, { [name]: value });
+        pending[name] = value;
+        flush();
+    }
+    // Writes the waiting levels whose screen can take one now; the others on the next tick
+    function flush() {
+        const now = Date.now();
+        let waiting = false;
+        for (const name of Object.keys(pending)) {
+            const d = devices[name];
+            if (!d) {
+                delete pending[name];
+            } else if (now - (lastWrite[name] ?? 0) >= (d.kind === "ddc" ? 250 : 50)) {
+                write(d, pending[name]);
+                lastWrite[name] = now;
+                delete pending[name];
+            } else {
+                waiting = true;
+            }
+        }
+        if (waiting && !flushTimer.running)
+            flushTimer.start();
+    }
+    function write(d, p) {
+        if (d.kind === "backlight") {
+            Quickshell.execDetached(["brightnessctl", "-q", "set", p + "%"]);
+            rereadAfter.restart();
+        } else {
+            Quickshell.execDetached(["ddcutil", "--bus", String(d.bus), "--noverify", "setvcp", "10", String(Math.round(p * d.max / 100))]);
         }
     }
+    // A level read back is ignored while changes to it are still being written
+    function busy(name) {
+        return pending[name] !== undefined || Date.now() - (lastWrite[name] ?? 0) < 1000 || (glide.running && gliding === name);
+    }
+
     function refresh() {
-        if (!reader.running)
-            reader.running = true;
+        readBacklight();
+        if (!monitorReader.running)
+            monitorReader.running = true;
+    }
+    function readBacklight() {
+        if (!backlightReader.running)
+            backlightReader.running = true;
         else
             rereadAfter.restart(); // a read is under way; read again once it's done
     }
-
-    function write(value) {
-        // Never all the way to 0: on many laptops that turns the backlight off
-        Quickshell.execDetached(["brightnessctl", "-q", "-n1%", "set", value]);
-        rereadAfter.restart();
+    // Replaces the devices of one kind, and takes the levels read that aren't busy
+    function update(kind, found) {
+        const next = {};
+        for (const name of Object.keys(devices)) {
+            if (devices[name].kind !== kind)
+                next[name] = devices[name];
+        }
+        const lv = Object.assign({}, levels);
+        for (const f of found) {
+            next[f.name] = f.device;
+            if (!busy(f.name))
+                lv[f.name] = f.percent;
+        }
+        devices = next;
+        levels = lv;
     }
 
     IpcHandler {
         target: "brightness"
 
-        // 5% per press, 10% when held (presses less than 350 ms apart)
+        // 5% per press, 10% when held (presses less than 350 ms apart), on the focused
+        // screen (or the first one that has brightness)
         function step(steps: int): void {
             const now = Date.now();
             const held = now - root.lastKey < 350;
             root.lastKey = now;
-            root.step(steps, held ? 10 : 5);
+            const focused = I3.focusedMonitor?.name ?? "";
+            const name = root.has(focused) ? focused : Quickshell.screens.map(s => s.name).find(n => root.has(n));
+            if (name)
+                root.step(name, steps, held ? 10 : 5);
         }
         function refresh(): void {
             root.refresh();
         }
+    }
+
+    // Monitors take a moment to answer after being plugged in or turned on
+    Connections {
+        target: Quickshell
+        function onScreensChanged() { hotplug.restart(); }
+    }
+    Timer {
+        id: hotplug
+        interval: 2000
+        onTriggered: root.refresh()
     }
 
     // Moves the level toward the target over ~250 ms, the gap between held-key repeats
@@ -79,46 +174,72 @@ Singleton {
         interval: 40
         repeat: true
         onTriggered: {
-            const diff = root.target - root.percent;
-            if (diff === 0) {
+            const now = root.level(root.gliding);
+            const diff = root.target - now;
+            if (diff === 0 || !root.has(root.gliding)) {
                 stop();
                 return;
             }
-            root.show(root.percent + Math.sign(diff) * Math.max(1, Math.round(Math.abs(diff) * 0.35)));
+            root.show(root.gliding, now + Math.sign(diff) * Math.max(1, Math.round(Math.abs(diff) * 0.35)));
         }
     }
 
     Timer {
-        id: writeLimit
+        id: flushTimer
         interval: 50
-        onTriggered: {
-            if (root.pending >= 0) {
-                root.write(root.pending + "%");
-                root.pending = -1;
-                restart();
-            }
-        }
+        onTriggered: root.flush()
     }
 
     Timer {
         id: rereadAfter
         interval: 150
-        onTriggered: root.refresh()
+        onTriggered: root.readBacklight()
     }
 
-    // brightnessctl -m prints "device,class,current,percent%,max"
+    // brightnessctl -m prints "device,class,current,percent%,max". The backlight is the
+    // built-in screen's: eDP (or LVDS / DSI on older and ARM laptops).
     Process {
-        id: reader
+        id: backlightReader
         command: ["brightnessctl", "-m", "--class=backlight"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
                 const p = parseInt(text.split(",")[3]);
-                root.available = !isNaN(p);
-                // Changes still being written: keep the level already shown
-                if (isNaN(p) || root.pending >= 0 || writeLimit.running || rereadAfter.running || glide.running)
-                    return;
-                root.percent = p;
+                const name = Quickshell.screens.map(s => s.name).find(n => /^(eDP|LVDS|DSI)-/.test(n));
+                root.update("backlight", isNaN(p) || !name ? [] : [{ name: name, device: { kind: "backlight" }, percent: p }]);
+            }
+        }
+    }
+
+    // Monitors that answer DDC/CI: "<bus> <screen name> <current> <max>" per line.
+    // ddcutil detect --brief lists "Display N" (or "Invalid display": no DDC/CI) with
+    // "I2C bus: /dev/i2c-5" and "DRM connector: card1-DP-2"; getvcp 10 --brief prints
+    // "VCP 10 C <current> <max>".
+    Process {
+        id: monitorReader
+        running: true
+        command: ["sh", "-c", `
+            command -v ddcutil >/dev/null || exit 0
+            ddcutil detect --brief 2>/dev/null | awk '
+                /^Display/ { valid = 1; bus = ""; conn = "" }
+                /^Invalid display/ { valid = 0 }
+                valid && /I2C bus:/ { bus = $NF; sub(/.*i2c-/, "", bus) }
+                valid && /DRM[_ ]connector:/ { conn = $NF; sub(/^card[0-9]+-/, "", conn) }
+                valid && bus != "" && conn != "" { print bus, conn; valid = 0 }
+            ' | while read -r bus conn; do
+                set -- $(ddcutil --bus "$bus" getvcp 10 --brief 2>/dev/null)
+                [ "$1" = VCP ] && [ "\${5:-0}" -gt 0 ] && echo "$bus $conn $4 $5"
+            done
+        `]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const found = [];
+                for (const line of text.trim().split("\n")) {
+                    const [bus, name, cur, max] = line.split(" ");
+                    if (name && parseInt(max) > 0)
+                        found.push({ name: name, device: { kind: "ddc", bus: parseInt(bus), max: parseInt(max) }, percent: Math.round(parseInt(cur) * 100 / parseInt(max)) });
+                }
+                root.update("ddc", found);
             }
         }
     }

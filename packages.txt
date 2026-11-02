@@ -12,7 +12,8 @@ adw-gtk3-theme          # GTK3 apps in libadwaita style
 papirus-icon-theme      # icons
 jetbrains-mono-fonts-all    # font
 fontawesome-6-free-fonts    # bar and panel icons
-brightnessctl           # screen brightness
+brightnessctl           # screen brightness (laptop screen)
+ddcutil                 # screen brightness (monitors, DDC/CI)
 playerctl               # media players (Now Playing)
 wlsunset                # night light
 wl-clipboard            # clipboard

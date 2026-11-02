@@ -7,7 +7,7 @@ BarButton {
 
     icon: ""
     iconColor: CaffeineService.on ? Theme.yellow : Theme.muted
-    onClicked: CaffeineService.on = !CaffeineService.on
+    onClicked: CaffeineService.toggle()
 
     IdleInhibitor {
         window: root.bar

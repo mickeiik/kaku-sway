@@ -11,12 +11,12 @@ Everything below is QML in [`config/quickshell/`](config/quickshell), written fo
 setup:
 
 - **Bar**: workspaces, clock, tray, Bluetooth, network, battery, sound, display, night
-  light, caffeine (no sleep), screen recording timer, pending updates, Claude and
-  ChatGPT plan usage (if Claude Code / Codex is signed in).
+  light, caffeine (no sleep, still on after a restart), screen recording timer, pending
+  updates, Claude and ChatGPT plan usage (if Claude Code / Codex is signed in).
 - **Panels** that drop down from the bar: sound (devices, per-app volume, what's
   playing), network (Wi-Fi, connection details, live traffic), Bluetooth, display
-  (brightness, text size, scale), battery (health, power modes), calendar, AI usage limits
-  and when they reset.
+  (text size; per screen: on/off, brightness, monitors included over DDC/CI, scale),
+  battery (health, power modes), calendar, AI usage limits and when they reset.
 - **Launcher** (Super+Space): apps, plus menus for screenshots and recording, tools
   (night light, keyboard shortcuts, calculator, clipboard history), installing and
   removing Fedora packages and Flathub apps, updates, default apps, power.
