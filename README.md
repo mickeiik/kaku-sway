@@ -12,12 +12,14 @@ setup:
 
 - **Bar**: workspaces, clock, tray, Bluetooth, network, battery, sound, display, night
   light, caffeine (no sleep, still on after a restart), screen recording timer, pending
-  updates, Claude and ChatGPT plan usage (if Claude Code / Codex is signed in).
+  updates, Claude and ChatGPT plan usage (if Claude Code / Codex is signed in), ntfy
+  messages (if set up).
 - **Panels** that drop down from the bar: sound (devices, per-app volume, what's
   playing), network (Wi-Fi, connection details, live traffic), Bluetooth, display
   (text size; per screen: on/off, main screen, brightness, monitors included over
   DDC/CI, HDR, scale; all still set after a restart),
-  battery (health, power modes), calendar, AI usage limits and when they reset.
+  battery (health, power modes), calendar, AI usage limits and when they reset,
+  [ntfy](https://ntfy.sh) messages (see below).
 - **Launcher** (Super+Space): apps, plus menus for screenshots and recording, tools
   (night light, keyboard shortcuts, calculator, clipboard history), installing and
   removing Fedora packages and Flathub apps, updates, default apps, power.
@@ -62,6 +64,18 @@ rest, in the launcher's Update.
 The keyboard is French AZERTY with US as second layout (Alt+Shift switches): change
 `xkb_layout` in `config/sway/config.d/10-input.conf` for yours. Dates are in French
 (`locale` in `config/quickshell/Theme.qml`).
+
+**ntfy**: Tools > ntfy notifications in the launcher puts a bell on the bar, and its
+panel lists the messages of your topics (the last 7 days that the server keeps); long
+ones open on a click, and you can clear one (its ×) or all of them from the list. The
+gear in the panel sets the server, your account and the topics, with the priority from
+which each topic's messages also pop up (urgent ones stay until closed). Signing in
+with your username and password gets this PC its own access token, and the password
+isn't kept (you can paste a token instead). Sign out deletes the token, on the server
+too. Attachments open in their default app, or in the browser; links and "Open in
+ntfy" in the browser. The server and topics are in `~/.config/kaku/ntfy.json`, the
+token in `~/.config/kaku/ntfy-token` (readable by you only; keep it out of your
+dotfiles).
 
 HDR (the display panel shows it for screens that take HDR10) needs Sway 1.12 (Fedora
 45) and its Vulkan renderer, which wlroots still calls experimental: put

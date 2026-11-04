@@ -76,6 +76,7 @@ PanelWindow {
         anchors.verticalCenter: parent.verticalCenter
         spacing: 0
 
+        NtfyButton { bar: bar }
         AiUsageButton { bar: bar }
         Tray { bar: bar }
         BluetoothButton { bar: bar }

@@ -8,6 +8,8 @@ Singleton {
     readonly property color bgAlt: "#292e42"
     readonly property color border: "#414868"
     readonly property color fg: "#c0caf5"
+    readonly property color fgDim: "#a9b1d6" // secondary text that must still read well
+    readonly property color card: "#24283b" // a card on a panel
     readonly property color muted: "#565f89"
     readonly property color accent: "#7aa2f7"
     readonly property color green: "#9ece6a"

@@ -66,6 +66,9 @@ PanelWindow {
           run: () => NightLightService.cycle(), stay: true, live: () => NightLightService.label },
         { name: "Keyboard shortcuts", icon: "preferences-desktop-keyboard-shortcuts", keywords: "keys bindings cheat sheet raccourcis", menu: "shortcuts" },
         { name: "Clipboard history", icon: "edit-paste", keywords: "clipboard copy paste history presse-papiers", menu: "clipboard" },
+        // Shows the bell on the bar and opens its settings (server, account, topics)
+        { name: "ntfy notifications", icon: "preferences-system-notifications", keywords: "ntfy push notifications server topics alerts",
+          run: () => { NtfyService.enable(); Quickshell.execDetached(["qs", "ipc", "call", "bar", "toggle", "ntfy"]); } },
         { name: "Calculator: type math in the search", icon: "accessories-calculator", keywords: "calculator calculate math calculatrice" }
     ]
 

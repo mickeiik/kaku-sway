@@ -44,6 +44,7 @@ ShellRoot {
             LazyLoader { active: barWindow.openPanel === "battery"; BatteryPanel { bar: barWindow } }
             LazyLoader { active: barWindow.openPanel === "calendar"; CalendarPanel { bar: barWindow } }
             LazyLoader { active: barWindow.openPanel === "ai"; AiUsagePanel { bar: barWindow } }
+            LazyLoader { active: barWindow.openPanel === "ntfy"; NtfyPanel { bar: barWindow } }
             LazyLoader { active: barWindow.openPanel.startsWith("tray:"); TrayMenu { bar: barWindow } }
         }
     }

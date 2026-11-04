@@ -26,6 +26,7 @@ swappy                  # screenshot annotation
 wf-recorder             # screen recording
 libnotify               # notify-send
 jq                      # used by scripts
+xdg-utils               # xdg-mime: the ntfy panel opens attachments in their app
 fzf                     # package browsers of the launcher (Install / Remove)
 fprintd                 # fingerprint (lock screen, admin prompt)
 fprintd-pam
