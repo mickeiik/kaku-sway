@@ -61,7 +61,7 @@ That's voxtype, from its GitHub releases (it isn't in Fedora's), and its ~2.6 GB
 model; it keeps about 2 GB of memory while running. Its updates then come with the
 rest, in the launcher's Update.
 
-The keyboard is French AZERTY with US as second layout (Alt+Shift switches): change
+The keyboard is French AZERTY: change
 `xkb_layout` in `config/sway/config.d/10-input.conf` for yours. Dates are in French
 (`locale` in `config/quickshell/Theme.qml`).
 
@@ -98,7 +98,6 @@ HDR (the display panel shows it for screens that take HDR10) needs Sway 1.12 (Fe
 | Ctrl+Super+V | clipboard history |
 | Super+D (hold) | dictate, if installed: speak, let go to type it (Esc cancels) |
 | Print / Alt+Print / Ctrl+Print | screenshot: area / window / screen |
-| Alt+Shift | switch keyboard layout |
 
 Windows tile automatically ([autotiling](https://github.com/nwg-piotr/autotiling)).
 
