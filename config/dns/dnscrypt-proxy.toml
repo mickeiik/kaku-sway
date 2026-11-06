@@ -1,0 +1,32 @@
+# kaku-sway: DNS over HTTPS to Mullvad (https://dns.mullvad.net/dns-query).
+# systemd-resolved forwards every lookup here (see kaku-dns.conf); this sends it
+# encrypted to Mullvad. Installed as /etc/dnscrypt-proxy/dnscrypt-proxy.toml.
+listen_addresses = ['127.0.2.1:53']
+server_names = ['mullvad-doh', 'mullvad-doh-v6']
+
+ipv4_servers = true
+ipv6_servers = true
+doh_servers = true
+dnscrypt_servers = false
+require_dnssec = false
+require_nolog = false
+require_nofilter = false
+
+# Only Mullvad: never falls back to another resolver
+bootstrap_resolvers = ['194.242.2.2:53']
+ignore_system_dns = true
+netprobe_address = '194.242.2.2:53'
+netprobe_timeout = 60
+
+cache = true
+cache_size = 4096
+block_ipv6 = false
+
+# Tailnet names (*.ts.net) still answered by Tailscale, see forwarding-rules.txt
+forwarding_rules = '/etc/dnscrypt-proxy/forwarding-rules.txt'
+
+[static]
+  [static.'mullvad-doh']
+  stamp = 'sdns://AgAAAAAAAAAACzE5NC4yNDIuMi4yAA9kbnMubXVsbHZhZC5uZXQKL2Rucy1xdWVyeQ'
+  [static.'mullvad-doh-v6']
+  stamp = 'sdns://AgAAAAAAAAAADlsyYTA3OmUzNDA6OjJdAA9kbnMubXVsbHZhZC5uZXQKL2Rucy1xdWVyeQ'

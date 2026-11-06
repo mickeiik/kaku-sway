@@ -85,6 +85,25 @@ sudo authselect enable-feature with-faillock
 step "Firefox defaults (scroll over the tabs to switch them)"
 sudo install -Dm644 "$here/config/firefox/kaku-prefs.js" /usr/lib64/firefox/browser/defaults/preferences/kaku-prefs.js
 
+step "DNS over HTTPS for the whole system (Mullvad: dns.mullvad.net)"
+# systemd-resolved can't speak HTTPS, so it forwards to dnscrypt-proxy, which does
+sudo install -Dm644 "$here/config/dns/dnscrypt-proxy.toml" /etc/dnscrypt-proxy/dnscrypt-proxy.toml
+sudo install -Dm644 "$here/config/dns/forwarding-rules.txt" /etc/dnscrypt-proxy/forwarding-rules.txt
+sudo install -Dm644 "$here/config/dns/kaku-dns.conf" /etc/systemd/resolved.conf.d/kaku-dns.conf
+sudo install -Dm644 "$here/config/dns/nm-kaku-dns.conf" /etc/NetworkManager/conf.d/kaku-dns.conf
+sudo systemctl enable --now dnscrypt-proxy
+sudo systemctl restart dnscrypt-proxy systemd-resolved
+sudo systemctl reload NetworkManager
+# The DNS servers NetworkManager already handed over stay until the next reconnect
+for link in $(resolvectl status | sed -n 's/^Link [0-9]* (\(.*\))$/\1/p'); do
+    [ "$link" = tailscale0 ] || sudo resolvectl revert "$link"
+done
+# Tailscale would otherwise take over every lookup (its tailnet DNS settings);
+# tailnet names (*.ts.net) still reach it through dnscrypt-proxy
+if command -v tailscale >/dev/null; then
+    sudo tailscale set --accept-dns=false || true
+fi
+
 step "Keyring (oo7: keeps apps' saved sign-ins, unlocked by your login password)"
 # SDDM's login already hands the password to oo7 (pam_oo7); gnome-keyring would
 # take its place on D-Bus and ask for the password again, so it goes

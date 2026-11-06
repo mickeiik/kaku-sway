@@ -32,4 +32,5 @@ fprintd                 # fingerprint (lock screen, admin prompt)
 fprintd-pam
 oo7-daemon              # keyring that keeps app sign-ins (Claude Desktop, VS Code...), unlocked by the login
 pam_oo7
+dnscrypt-proxy          # system-wide DNS over HTTPS (Mullvad)
 pipx                    # to install autotiling
