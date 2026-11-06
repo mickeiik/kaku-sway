@@ -30,4 +30,6 @@ xdg-utils               # xdg-mime: the ntfy panel opens attachments in their ap
 fzf                     # package browsers of the launcher (Install / Remove)
 fprintd                 # fingerprint (lock screen, admin prompt)
 fprintd-pam
+oo7-daemon              # keyring that keeps app sign-ins (Claude Desktop, VS Code...), unlocked by the login
+pam_oo7
 pipx                    # to install autotiling

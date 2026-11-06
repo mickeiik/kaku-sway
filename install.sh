@@ -85,6 +85,12 @@ sudo authselect enable-feature with-faillock
 step "Firefox defaults (scroll over the tabs to switch them)"
 sudo install -Dm644 "$here/config/firefox/kaku-prefs.js" /usr/lib64/firefox/browser/defaults/preferences/kaku-prefs.js
 
+step "Keyring (oo7: keeps apps' saved sign-ins, unlocked by your login password)"
+# SDDM's login already hands the password to oo7 (pam_oo7); gnome-keyring would
+# take its place on D-Bus and ask for the password again, so it goes
+sudo dnf remove -y gnome-keyring || true
+systemctl --user enable oo7-daemon.service
+
 step "GTK look"
 gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark'
 gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
