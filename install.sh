@@ -82,6 +82,9 @@ step "Login rules: fingerprint, and lockout after 3 wrong passwords (faillock)"
 sudo authselect enable-feature with-fingerprint
 sudo authselect enable-feature with-faillock
 
+step "Firefox defaults (scroll over the tabs to switch them)"
+sudo install -Dm644 "$here/config/firefox/kaku-prefs.js" /usr/lib64/firefox/browser/defaults/preferences/kaku-prefs.js
+
 step "GTK look"
 gsettings set org.gnome.desktop.interface gtk-theme 'adw-gtk3-dark'
 gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
