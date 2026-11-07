@@ -102,6 +102,14 @@ done
 # tailnet names (*.ts.net) still reach it through dnscrypt-proxy
 if command -v tailscale >/dev/null; then
     sudo tailscale set --accept-dns=false || true
+    # Short tailnet names (ssh pve) need the tailnet's suffix as a search domain,
+    # which Tailscale only set while it handled DNS
+    suffix=$(tailscale status --json 2>/dev/null | jq -r '.MagicDNSSuffix // empty' || true)
+    if [ -n "$suffix" ]; then
+        printf '# kaku-sway: short tailnet names (pve -> pve.%s)\n[Resolve]\nDomains=%s\n' "$suffix" "$suffix" |
+            sudo tee /etc/systemd/resolved.conf.d/kaku-tailnet.conf >/dev/null
+        sudo systemctl restart systemd-resolved
+    fi
 fi
 
 step "Keyring (oo7: keeps apps' saved sign-ins, unlocked by your login password)"
