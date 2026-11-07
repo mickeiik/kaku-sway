@@ -24,6 +24,7 @@ Popout {
         Label {
             text: Theme.locale.toString(new Date(root.year, root.month, 1), "MMMM yyyy")
             font.bold: true
+            color: Theme.fg
             horizontalAlignment: Text.AlignHCenter
             Layout.fillWidth: true
         }
