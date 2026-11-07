@@ -12,8 +12,8 @@ setup:
 
 - **Bar**: workspaces, clock, tray, Bluetooth, network, battery, sound, display, night
   light, caffeine (no sleep, still on after a restart), screen recording timer, pending
-  updates, Claude and ChatGPT plan usage (if Claude Code / Codex is signed in), ntfy
-  messages (if set up).
+  updates, Claude, ChatGPT and OpenCode Go plan usage (if Claude Code / Codex /
+  opencode is signed in), ntfy messages (if set up).
 - **Panels** that drop down from the bar: sound (devices, per-app volume, what's
   playing), network (Wi-Fi, connection details, live traffic), Bluetooth, display
   (text size; per screen: on/off, main screen, brightness, monitors included over

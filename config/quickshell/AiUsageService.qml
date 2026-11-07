@@ -9,7 +9,7 @@ import Quickshell
 Singleton {
     id: root
 
-    readonly property list<AiUsageProvider> providers: [claude, chatgpt]
+    readonly property list<AiUsageProvider> providers: [claude, chatgpt, opencodeGo]
     readonly property var shown: providers.filter(p => p.signedIn)
     readonly property bool loaded: shown.some(p => p.updated > 0)
     readonly property bool busy: providers.some(p => p.busy)
@@ -158,6 +158,46 @@ Singleton {
                 ?? Array(count).fill({ name: "Limit reset", until: null });
             return { plan: root.capitalize(data.plan_type ?? ""), limits: limits, resets: resets };
         }
+    }
+
+    // OpenCode Go (opencode's sign-in: the key from /connect, in its database, or in
+    // auth.json for older versions), the limits on its console page. The key alone
+    // is enough; it doesn't run out.
+    AiUsageProvider {
+        id: opencodeGo
+        name: "OpenCode Go"
+        // OpenCode's logo, the frame of its square "O"
+        iconPath: "M16.8 4.8H7.2v14.4h9.6ZM21.6 24H2.4V0h19.2Z"
+        expiredHint: "Key not accepted: run \"opencode\" and /connect OpenCode Go again"
+        script: `
+            dir="\${XDG_DATA_HOME:-$HOME/.local/share}/opencode"
+            key=$(python3 -I -c '
+import json, sqlite3, sys
+db = sqlite3.connect("file:" + sys.argv[1] + "?mode=ro", uri=True)
+row = db.execute("select value from credential where integration_id = ? and active is not 0"
+                 " order by active desc, time_updated desc limit 1", ("opencode-go",)).fetchone()
+print(json.loads(row[0])["key"] if row else "")
+' "$dir/opencode.db" 2>/dev/null)
+            [ -n "$key" ] || key=$(jq -r '."opencode-go".key // empty' "$dir/auth.json" 2>/dev/null)
+            [ -n "$key" ] || { echo "signed-out"; exit; }
+            echo ok
+            printf 'Authorization: Bearer %s\\n' "$key" |
+                curl -sS --max-time 15 -H @- -w '\\n%{http_code}' 'https://opencode.ai/zen/go/v1/usage' 2>&1
+        `
+        // Three windows: rolling (5 hours), weekly and monthly
+        parse: data => ({
+            plan: "Go",
+            limits: [["rolling", "Session (5 hours)"], ["weekly", "Week"], ["monthly", "Month"]]
+                .filter(([key]) => data.usage?.[key])
+                .map(([key, name]) => ({
+                    name: name,
+                    percent: Math.round(data.usage[key].percent),
+                    resetsAt: new Date(data.usage[key].resetsAt),
+                    session: key === "rolling",
+                    weekly: key === "weekly"
+                })),
+            resets: []
+        })
     }
 
     Timer {
