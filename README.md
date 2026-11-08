@@ -65,6 +65,12 @@ The keyboard is French AZERTY: change
 `xkb_layout` in `config/sway/config.d/10-input.conf` for yours. Dates are in French
 (`locale` in `config/quickshell/Theme.qml`).
 
+**AI usage**: the bar shows the subscriptions whose command-line tool is signed in
+(Claude Code, Codex, opencode). The gear in the panel chooses which of Claude,
+ChatGPT and OpenCode Go appear; a hidden one isn't checked at all, so no usage
+request is made for it. The choice is in `~/.config/kaku/ai-usage.json`. Tools >
+AI usage in the launcher opens the panel even if every subscription is hidden.
+
 **ntfy**: Tools > ntfy notifications in the launcher puts a bell on the bar, and its
 panel lists the messages of your topics (the last 7 days that the server keeps); long
 ones open on a click, and you can clear one (its ×) or all of them from the list. The

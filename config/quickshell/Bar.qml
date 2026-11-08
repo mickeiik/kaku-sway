@@ -23,8 +23,14 @@ PanelWindow {
     // Same as clicking that panel's button (for qs ipc call bar toggle <name>)
     function toggleByName(name) {
         const button = [clockButton].concat(rightButtons.children).find(b => b.panel === name && b.visible); // hidden: e.g. no battery
-        if (button)
+        if (button) {
             toggle(name, button);
+        } else if (name === "ai") {
+            // The AI button hides when every subscription is hidden, but its
+            // settings must stay reachable from the launcher
+            panelX = width / 2;
+            openPanel = openPanel === name ? "" : name;
+        }
     }
 
     anchors { top: true; left: true; right: true }

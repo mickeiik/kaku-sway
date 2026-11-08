@@ -69,6 +69,9 @@ PanelWindow {
         // Shows the bell on the bar and opens its settings (server, account, topics)
         { name: "ntfy notifications", icon: "preferences-system-notifications", keywords: "ntfy push notifications server topics alerts",
           run: () => { NtfyService.enable(); Quickshell.execDetached(["qs", "ipc", "call", "bar", "toggle", "ntfy"]); } },
+        // Which AI subscriptions the bar shows and checks (Claude, ChatGPT...)
+        { name: "AI usage", icon: "utilities-system-monitor", keywords: "ai claude chatgpt opencode usage subscription limits quota",
+          run: () => Quickshell.execDetached(["qs", "ipc", "call", "bar", "toggle", "ai"]) },
         { name: "Calculator: type math in the search", icon: "accessories-calculator", keywords: "calculator calculate math calculatrice" }
     ]
 

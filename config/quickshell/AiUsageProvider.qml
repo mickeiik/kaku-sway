@@ -12,11 +12,13 @@ QtObject {
     id: root
 
     required property string name
+    required property string providerId // stable id for the settings file ("claude"...)
     required property string script
     required property var parse
     required property string iconPath // the logo, an SVG path in a 24×24 box (PathIcon)
     property string expiredHint: "" // what to do when the API says the sign-in expired (401)
 
+    property bool enabled: true // false: hidden in the settings, never checked
     property bool signedIn: false
     property string plan: ""
     property var limits: []
@@ -29,8 +31,15 @@ QtObject {
     readonly property var weekly: limits.find(l => l.weekly) ?? null
 
     function refresh() {
-        if (!checker.running)
-            checker.running = true;
+        if (!enabled || checker.running)
+            return;
+        checker.running = true;
+    }
+
+    // Hiding it stops any check already running
+    onEnabledChanged: {
+        if (!enabled)
+            checker.running = false;
     }
 
     property Process checker: Process {
