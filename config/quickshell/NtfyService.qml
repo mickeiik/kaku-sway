@@ -28,6 +28,7 @@ Singleton {
     property string server: ""
     property var topics: [] // [{ name, popup }]
     property bool hasToken: false
+    property bool tokenFileChanged: false
     property string account: "" // the signed-in user's name, once the server said it
     readonly property bool configured: server !== "" && hasToken && topics.length > 0
 
@@ -311,11 +312,18 @@ Singleton {
     // --- the stream -------------------------------------------------------
 
     property bool restartPending: false
+    readonly property int retryMin: 15 * 1000
+    readonly property int retryMax: 5 * 60 * 1000
+    property int retryDelay: 0
+
     function restart() {
+        reconnect.stop();
+        retryDelay = 0;
+        error = "";
         if (stream.running) {
             restartPending = true;
             stream.running = false;
-        } else {
+        } else if (configured) {
             reconnect.interval = 200;
             reconnect.restart();
         }
@@ -345,6 +353,7 @@ Singleton {
         if (e.event === "open") {
             streamOpen = true;
             error = "";
+            retryDelay = 0;
             return;
         }
         if (e.event !== "message" || messages.some(m => m.id === e.id))
@@ -528,7 +537,6 @@ Singleton {
         }
     }
 
-    // What to do when the stream stops: reconnect soon, or later when the token is refused
     function streamEnded(errText) {
         const codes = errText.match(/HTTP \d{3}/g) ?? []; // the last one: after redirects
         const status = codes.length > 0 ? codes[codes.length - 1].slice(5) : "000";
@@ -538,14 +546,18 @@ Singleton {
         } else if (status === "401" || status === "403") {
             error = status === "401" ? "Token refused by the server"
                 : "This token can't read " + topics.map(t => t.name).join(", ");
-            reconnect.interval = 5 * 60 * 1000;
+            // Wait for a new token or the refresh button; the file may be gone
+            tokenCheck.running = true;
+            return;
         } else {
             error = status === "000" ? "Can't reach " + server + ", retrying"
                 : status === "200" ? "Connection to " + server + " lost, retrying"
                 : "Server answered HTTP " + status + ", retrying";
-            reconnect.interval = 15 * 1000;
+            retryDelay = retryDelay === 0 ? retryMin : Math.min(retryDelay * 2, retryMax);
+            reconnect.interval = retryDelay;
         }
-        reconnect.restart();
+        if (configured)
+            reconnect.restart();
     }
 
     Timer {
@@ -588,9 +600,24 @@ Singleton {
         command: ["test", "-s", root.tokenFile]
         onExited: code => {
             const had = root.hasToken;
+            const changed = root.tokenFileChanged;
+            root.tokenFileChanged = false;
             root.hasToken = code === 0;
-            if (root.hasToken !== had)
+            if (root.hasToken !== had || changed)
                 root.restart();
+        }
+    }
+
+    // Watch only: the token is read by curl, never here
+    FileView {
+        id: tokenWatch
+        path: root.tokenFile
+        preload: false
+        watchChanges: true
+        printErrors: false
+        onFileChanged: {
+            root.tokenFileChanged = true;
+            tokenCheck.running = true;
         }
     }
 
