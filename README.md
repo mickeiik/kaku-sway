@@ -32,6 +32,8 @@ setup:
 - **Speech to text** (optional) with [voxtype](https://github.com/peteonrails/voxtype):
   hold Super+D, speak, let go, and the text is typed where the cursor is (the language
   is detected). Runs offline (NVIDIA Parakeet); your voice level shows on screen.
+- **DNS over HTTPS**: every lookup is encrypted to Mullvad (`dns.mullvad.net`),
+  while `*.ts.net` names still go to Tailscale. No plaintext DNS, no other provider.
 - Low battery warnings, automatic night light (sunset to sunrise), clipboard history.
 
 ![Login screen](screenshots/login.gif)
@@ -116,7 +118,8 @@ Windows tile automatically ([autotiling](https://github.com/nwg-piotr/autotiling
 | `config/sddm-theme/` | login screen |
 | `config/voxtype/` | speech to text (model, language) |
 | `config/gtk-3.0`, `gtk-4.0`, `foot`, `micro`, `swappy` | app theming |
-| `config/systemd/` | runs voxtype's Parakeet build |
+| `config/dns/` | system-wide DNS over HTTPS to Mullvad (dnscrypt-proxy behind systemd-resolved) |
+| `config/systemd/` | runs voxtype's Parakeet build; starts dnscrypt-proxy after the network |
 | `bin/` | `lock-screen` (Quickshell lock with swaylock fallback), `launcher-pkg` (package browsers, voxtype updates), `voxtype-onnx` (voxtype's Parakeet build) |
 
 ## License

@@ -91,8 +91,19 @@ sudo install -Dm644 "$here/config/dns/dnscrypt-proxy.toml" /etc/dnscrypt-proxy/d
 sudo install -Dm644 "$here/config/dns/forwarding-rules.txt" /etc/dnscrypt-proxy/forwarding-rules.txt
 sudo install -Dm644 "$here/config/dns/kaku-dns.conf" /etc/systemd/resolved.conf.d/kaku-dns.conf
 sudo install -Dm644 "$here/config/dns/nm-kaku-dns.conf" /etc/NetworkManager/conf.d/kaku-dns.conf
-sudo systemctl enable --now dnscrypt-proxy
-sudo systemctl restart dnscrypt-proxy systemd-resolved
+sudo install -Dm644 "$here/config/systemd/system/dnscrypt-proxy.service.d/10-network-online.conf" \
+    /etc/systemd/system/dnscrypt-proxy.service.d/10-network-online.conf
+sudo systemctl daemon-reload
+sudo systemctl enable dnscrypt-proxy
+started=$(date '+%Y-%m-%d %H:%M:%S')
+sudo systemctl restart dnscrypt-proxy
+# It binds the port immediately but stays silent until a DoH server answers,
+# so wait for that before resolved starts forwarding to it.
+for _ in $(seq 1 30); do
+    journalctl -u dnscrypt-proxy --since "$started" --no-pager 2>/dev/null | grep -q 'OK (DoH)' && break
+    sleep 1
+done
+sudo systemctl restart systemd-resolved
 sudo systemctl reload NetworkManager
 # The DNS servers NetworkManager already handed over stay until the next reconnect
 for link in $(resolvectl status | sed -n 's/^Link [0-9]* (\(.*\))$/\1/p'); do

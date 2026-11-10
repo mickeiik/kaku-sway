@@ -2,10 +2,15 @@
 # systemd-resolved forwards every lookup here (see kaku-dns.conf); this sends it
 # encrypted to Mullvad. Installed as /etc/dnscrypt-proxy/dnscrypt-proxy.toml.
 listen_addresses = ['127.0.2.1:53']
-server_names = ['mullvad-doh', 'mullvad-doh-v6']
+
+# IPv4 only: Mullvad's IPv6 endpoint is unreachable on some networks, and
+# dnscrypt-proxy then answers nothing until netprobe_timeout runs out. Since
+# resolved points here with no fallback, that is a total DNS outage.
+# AAAA answers still come through (block_ipv6 stays off).
+server_names = ['mullvad-doh']
 
 ipv4_servers = true
-ipv6_servers = true
+ipv6_servers = false
 doh_servers = true
 dnscrypt_servers = false
 require_dnssec = false
@@ -16,7 +21,7 @@ require_nofilter = false
 bootstrap_resolvers = ['194.242.2.2:53']
 ignore_system_dns = true
 netprobe_address = '194.242.2.2:53'
-netprobe_timeout = 60
+netprobe_timeout = 10
 
 cache = true
 cache_size = 4096
@@ -28,5 +33,3 @@ forwarding_rules = '/etc/dnscrypt-proxy/forwarding-rules.txt'
 [static]
   [static.'mullvad-doh']
   stamp = 'sdns://AgAAAAAAAAAACzE5NC4yNDIuMi4yAA9kbnMubXVsbHZhZC5uZXQKL2Rucy1xdWVyeQ'
-  [static.'mullvad-doh-v6']
-  stamp = 'sdns://AgAAAAAAAAAADlsyYTA3OmUzNDA6OjJdAA9kbnMubXVsbHZhZC5uZXQKL2Rucy1xdWVyeQ'
