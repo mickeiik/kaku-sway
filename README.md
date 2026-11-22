@@ -1,5 +1,8 @@
 # kaku-sway
 
+> **Archived.** This desktop moved to Hyprland and lives on in
+> [kaku-hypr](https://github.com/mickeiik/kaku-hypr). This repo stays as the last Sway version.
+
 A Fedora Sway desktop built with [Quickshell](https://quickshell.org): Tokyo Night colors
 and square corners everywhere (*kaku*, 角, is Japanese for "square / corner").
 
